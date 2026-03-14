@@ -75,7 +75,7 @@ def _fetch_binary():
 
     discovery_url = (
         "https://supermaven.com/api/download-path-v2"
-        "?platform=%s&arch=%s&editor=sublime" % (plat, arch)
+        "?platform=%s&arch=%s&editor=neovim" % (plat, arch)
     )
     try:
         with urllib.request.urlopen(discovery_url, timeout=30) as resp:
