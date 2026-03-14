@@ -138,9 +138,9 @@ def show_completion(view, text, prior_delete, cursor_pos):
 
     phantoms = []  # type: list[sublime.Phantom]
 
-    # Inline phantom for the first line — placed one char past cursor so it
-    # appears to the right of the caret without shifting existing text.
-    inline_pos = min(cursor_pos + 1, view.size())
+    # Inline phantom for the first line — anchored at the cursor so the
+    # preview matches the eventual insertion point.
+    inline_pos = cursor_pos
     phantoms.append(
         sublime.Phantom(
             sublime.Region(inline_pos, inline_pos),
