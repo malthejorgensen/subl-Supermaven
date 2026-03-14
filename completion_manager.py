@@ -11,8 +11,6 @@ the ghost-text display:
 This mirrors the approach used by LSP-copilot's _PhantomCompletion class.
 """
 
-from __future__ import annotations
-
 import html
 import threading
 
@@ -54,19 +52,21 @@ _LINE_TEMPLATE = '<div class="line {cls}">{content}</div>'
 class _CompletionState:
     __slots__ = ("text", "prior_delete", "cursor_pos", "is_visible", "phantom_set")
 
-    def __init__(self) -> None:
-        self.text: str = ""
-        self.prior_delete: int = 0
-        self.cursor_pos: int = -1
-        self.is_visible: bool = False
-        self.phantom_set: sublime.PhantomSet | None = None
+    def __init__(self):
+        # type: () -> None
+        self.text = ""  # type: str
+        self.prior_delete = 0  # type: int
+        self.cursor_pos = -1  # type: int
+        self.is_visible = False  # type: bool
+        self.phantom_set = None  # type: sublime.PhantomSet | None
 
 
-_states: dict[int, _CompletionState] = {}
+_states = {}  # type: dict[int, _CompletionState]
 _lock = threading.Lock()
 
 
-def _get_state(view: sublime.View) -> _CompletionState:
+def _get_state(view):
+    # type: (sublime.View) -> _CompletionState
     vid = view.id()
     with _lock:
         if vid not in _states:
@@ -74,7 +74,8 @@ def _get_state(view: sublime.View) -> _CompletionState:
         return _states[vid]
 
 
-def _remove_state(view: sublime.View) -> None:
+def _remove_state(view):
+    # type: (sublime.View) -> None
     with _lock:
         _states.pop(view.id(), None)
 
@@ -84,12 +85,14 @@ def _remove_state(view: sublime.View) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _normalize(line: str, tab_size: int = 4) -> str:
+def _normalize(line, tab_size=4):
+    # type: (str, int) -> str
     """Escape HTML and replace whitespace for phantom rendering."""
     return html.escape(line).replace(" ", "&nbsp;").replace("\t", "&nbsp;" * tab_size)
 
 
-def _build_body(lines: list[str], tab_size: int) -> str:
+def _build_body(lines, tab_size):
+    # type: (list[str], int) -> str
     if len(lines) == 1:
         return _normalize(lines[0], tab_size)
     return "".join(
@@ -101,7 +104,8 @@ def _build_body(lines: list[str], tab_size: int) -> str:
     )
 
 
-def _render_html(lines: list[str], view: sublime.View) -> str:
+def _render_html(lines, view):
+    # type: (list[str], sublime.View) -> str
     lpt = int(view.settings().get("line_padding_top", 0)) * 2
     lpb = int(view.settings().get("line_padding_bottom", 0)) * 2
     tab_size = int(view.settings().get("tab_size", 4))
@@ -114,12 +118,8 @@ def _render_html(lines: list[str], view: sublime.View) -> str:
 # ---------------------------------------------------------------------------
 
 
-def show_completion(
-    view: sublime.View,
-    text: str,
-    prior_delete: int,
-    cursor_pos: int,
-) -> None:
+def show_completion(view, text, prior_delete, cursor_pos):
+    # type: (sublime.View, str, int, int) -> None
     """Render *text* as ghost text at *cursor_pos* in *view*."""
     state = _get_state(view)
     state.text = text
@@ -136,7 +136,7 @@ def show_completion(
     first_line_html = _render_html([lines[0]], view)
     rest_lines = lines[1:]
 
-    phantoms: list[sublime.Phantom] = []
+    phantoms = []  # type: list[sublime.Phantom]
 
     # Inline phantom for the first line — placed one char past cursor so it
     # appears to the right of the caret without shifting existing text.
@@ -163,7 +163,8 @@ def show_completion(
     state.phantom_set.update(phantoms)
 
 
-def hide_completion(view: sublime.View) -> None:
+def hide_completion(view):
+    # type: (sublime.View) -> None
     """Remove ghost text from *view*."""
     state = _get_state(view)
     if not state.is_visible:
@@ -176,18 +177,21 @@ def hide_completion(view: sublime.View) -> None:
         state.phantom_set.update([])
 
 
-def has_completion(view: sublime.View) -> bool:
+def has_completion(view):
+    # type: (sublime.View) -> bool
     state = _get_state(view)
     return state.is_visible and bool(state.text)
 
 
-def get_completion(view: sublime.View) -> tuple[str, int, int]:
+def get_completion(view):
+    # type: (sublime.View) -> tuple[str, int, int]
     """Return (text, prior_delete, cursor_pos) for the current completion."""
     state = _get_state(view)
     return state.text, state.prior_delete, state.cursor_pos
 
 
-def close_view(view: sublime.View) -> None:
+def close_view(view):
+    # type: (sublime.View) -> None
     """Called when a view is closed; cleans up state."""
     hide_completion(view)
     _remove_state(view)

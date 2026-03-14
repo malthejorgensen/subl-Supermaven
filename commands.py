@@ -8,8 +8,6 @@ Sublime Text commands for Supermaven.
   supermaven_logout              – log out from Supermaven
 """
 
-from __future__ import annotations
-
 import sublime
 import sublime_plugin
 
@@ -17,7 +15,8 @@ from . import completion_manager
 from . import plugin as _plugin
 
 
-def _next_word_end(text: str) -> int:
+def _next_word_end(text):
+    # type: (str) -> int
     """Return the index just past the first 'word' in *text*.
 
     A word ends at the first whitespace character that comes after at least
@@ -36,7 +35,8 @@ def _next_word_end(text: str) -> int:
 class SupermavenAcceptCompletionCommand(sublime_plugin.TextCommand):
     """Insert the entire current ghost-text completion."""
 
-    def run(self, edit: sublime.Edit) -> None:
+    def run(self, edit):
+        # type: (sublime.Edit) -> None
         text, prior_delete, _cursor_pos = completion_manager.get_completion(self.view)
         if not text:
             return
@@ -58,14 +58,16 @@ class SupermavenAcceptCompletionCommand(sublime_plugin.TextCommand):
 
         self.view.insert(edit, cursor, text)
 
-    def is_enabled(self) -> bool:
+    def is_enabled(self):
+        # type: () -> bool
         return completion_manager.has_completion(self.view)
 
 
 class SupermavenAcceptWordCommand(sublime_plugin.TextCommand):
     """Insert only the first word of the current ghost-text completion."""
 
-    def run(self, edit: sublime.Edit) -> None:
+    def run(self, edit):
+        # type: (sublime.Edit) -> None
         text, prior_delete, _cursor_pos = completion_manager.get_completion(self.view)
         if not text:
             return
@@ -87,24 +89,28 @@ class SupermavenAcceptWordCommand(sublime_plugin.TextCommand):
 
         self.view.insert(edit, cursor, word)
 
-    def is_enabled(self) -> bool:
+    def is_enabled(self):
+        # type: () -> bool
         return completion_manager.has_completion(self.view)
 
 
 class SupermavenDismissCompletionCommand(sublime_plugin.TextCommand):
     """Hide the current ghost-text completion without inserting anything."""
 
-    def run(self, edit: sublime.Edit) -> None:
+    def run(self, edit):
+        # type: (sublime.Edit) -> None
         completion_manager.hide_completion(self.view)
 
-    def is_enabled(self) -> bool:
+    def is_enabled(self):
+        # type: () -> bool
         return completion_manager.has_completion(self.view)
 
 
 class SupermavenUseFreeVersionCommand(sublime_plugin.WindowCommand):
     """Switch the running binary to the free tier."""
 
-    def run(self) -> None:
+    def run(self):
+        # type: () -> None
         handler = _plugin.get_handler()
         if handler:
             handler.use_free_version()
@@ -116,7 +122,8 @@ class SupermavenUseFreeVersionCommand(sublime_plugin.WindowCommand):
 class SupermavenLogoutCommand(sublime_plugin.WindowCommand):
     """Log out from Supermaven."""
 
-    def run(self) -> None:
+    def run(self):
+        # type: () -> None
         handler = _plugin.get_handler()
         if handler:
             handler.logout()
@@ -128,7 +135,8 @@ class SupermavenLogoutCommand(sublime_plugin.WindowCommand):
 class SupermavenRestartCommand(sublime_plugin.WindowCommand):
     """Stop and restart the sm-agent binary."""
 
-    def run(self) -> None:
+    def run(self):
+        # type: () -> None
         handler = _plugin.get_handler()
         if handler:
             handler.stop()

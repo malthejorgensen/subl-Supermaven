@@ -5,19 +5,17 @@ Manages the subprocess lifecycle, JSON-over-stdio protocol, and the
 state_map that caches completions keyed by an incrementing state ID.
 """
 
-from __future__ import annotations
-
 import json
 import os
 import platform
 import subprocess
 import threading
 import urllib.request
-from typing import Any
 
+# from typing import Any
 import sublime
 
-HARD_SIZE_LIMIT = 10_000_000
+HARD_SIZE_LIMIT = 10000000  # 10 million
 MAX_STATE_ID_RETENTION = 50
 
 
@@ -26,7 +24,8 @@ MAX_STATE_ID_RETENTION = 50
 # ---------------------------------------------------------------------------
 
 
-def _platform() -> str:
+def _platform():
+    # type: () -> str
     s = platform.system()
     if s == "Darwin":
         return "macosx"
@@ -37,7 +36,8 @@ def _platform() -> str:
     return ""
 
 
-def _arch() -> str:
+def _arch():
+    # type: () -> str
     m = platform.machine().lower()
     if m in ("arm64", "aarch64"):
         return "aarch64"
@@ -46,19 +46,22 @@ def _arch() -> str:
     return ""
 
 
-def _binary_dir() -> str:
+def _binary_dir():
+    # type: () -> str
     xdg = os.environ.get("XDG_DATA_HOME")
     base = xdg if xdg else os.path.expanduser("~/.supermaven")
-    return os.path.join(base, "binary", "v20", f"{_platform()}-{_arch()}")
+    return os.path.join(base, "binary", "v20", "%s-%s" % (_platform(), _arch()))
 
 
-def _binary_path() -> str:
+def _binary_path():
+    # type: () -> str
     d = _binary_dir()
     name = "sm-agent.exe" if _platform() == "windows" else "sm-agent"
     return os.path.join(d, name)
 
 
-def _fetch_binary() -> str | None:
+def _fetch_binary():
+    # type: () -> str | None
     path = _binary_path()
     if os.path.isfile(path):
         return path
@@ -71,8 +74,8 @@ def _fetch_binary() -> str | None:
         return None
 
     discovery_url = (
-        f"https://supermaven.com/api/download-path-v2"
-        f"?platform={plat}&arch={arch}&editor=sublime"
+        "https://supermaven.com/api/download-path-v2"
+        "?platform=%s&arch=%s&editor=sublime" % (plat, arch)
     )
     try:
         with urllib.request.urlopen(discovery_url, timeout=30) as resp:
@@ -95,7 +98,7 @@ def _fetch_binary() -> str | None:
         sublime.status_message("Supermaven: Binary ready.")
         return path
     except Exception as exc:
-        sublime.error_message(f"Supermaven: Failed to download binary: {exc}")
+        sublime.error_message("Supermaven: Failed to download binary: %s" % (exc,))
         return None
 
 
@@ -104,25 +107,25 @@ def _fetch_binary() -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def _shares_common_prefix(s1: str, s2: str) -> bool:
+def _shares_common_prefix(s1, s2):
+    # type: (str, str) -> bool
     n = min(len(s1), len(s2))
     return s1[:n] == s2[:n]
 
 
-def _strip_prefix(
-    completion: list[dict[str, Any]], user_input: str
-) -> list[dict[str, Any]] | None:
+def _strip_prefix(completion, user_input):
+    # type: (list[dict[str, Any]], str) -> list[dict[str, Any]] | None
     """
     Strip the characters the user has already typed from the completion
     items.  Returns None if the completion no longer matches.
     """
-    remaining: list[dict[str, Any]] = []
+    remaining = []  # type: list[dict[str, Any]]
     prefix = user_input
 
     for item in completion:
         kind = item.get("kind")
         if kind == "text":
-            text: str = item["text"]
+            text = item["text"]  # type: str
             if not _shares_common_prefix(text, prefix):
                 return None
             trim = min(len(text), len(prefix))
@@ -143,10 +146,8 @@ def _strip_prefix(
     return remaining
 
 
-def _derive_completion_text(
-    completion: list[dict[str, Any]],
-    dust_strings: list[str],
-) -> tuple[str | None, int]:
+def _derive_completion_text(completion, dust_strings):
+    # type: (list[dict[str, Any]], list[str]) -> tuple[str | None, int]
     """
     Walk the completion item list and produce a plain-text completion
     string plus the number of chars to delete before the cursor (dedent).
@@ -194,25 +195,27 @@ def _derive_completion_text(
 
 
 class BinaryHandler:
-    def __init__(self) -> None:
-        self._process: subprocess.Popen | None = None
-        self._thread: threading.Thread | None = None
+    def __init__(self):
+        # type: () -> None
+        self._process = None  # type: subprocess.Popen | None
+        self._thread = None  # type: threading.Thread | None
         self._lock = threading.Lock()
 
         # state_id -> {"prefix": str, "completion": list}
-        self.state_map: dict[int, dict[str, Any]] = {}
-        self.current_state_id: int = 0
-        self.dust_strings: list[str] = []
-        self.activate_url: str | None = None
+        self.state_map = {}  # type: dict[int, dict[str, Any]]
+        self.current_state_id = 0  # type: int
+        self.dust_strings = []  # type: list[str]
+        self.activate_url = None  # type: str | None
 
         # Last submitted state — used to skip duplicate sends
-        self._last_state: dict[str, Any] | None = None
+        self._last_state = None  # type: dict[str, Any] | None
 
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
 
-    def start(self) -> bool:
+    def start(self):
+        # type: () -> bool
         """Download the binary if needed, then spawn the process."""
         binary_path = _fetch_binary()
         if not binary_path:
@@ -227,7 +230,7 @@ class BinaryHandler:
                 bufsize=0,
             )
         except Exception as exc:
-            sublime.error_message(f"Supermaven: Failed to start binary: {exc}")
+            sublime.error_message("Supermaven: Failed to start binary: %s" % (exc,))
             return False
 
         self._thread = threading.Thread(target=self._read_loop, daemon=True)
@@ -235,7 +238,8 @@ class BinaryHandler:
         self._send_greeting()
         return True
 
-    def stop(self) -> None:
+    def stop(self):
+        # type: () -> None
         if self._process:
             try:
                 self._process.terminate()
@@ -244,14 +248,16 @@ class BinaryHandler:
                 pass
             self._process = None
 
-    def is_running(self) -> bool:
+    def is_running(self):
+        # type: () -> bool
         return self._process is not None and self._process.poll() is None
 
     # ------------------------------------------------------------------
     # Low-level I/O
     # ------------------------------------------------------------------
 
-    def _send_json(self, obj: dict[str, Any]) -> None:
+    def _send_json(self, obj):
+        # type: (dict[str, Any]) -> None
         if not self.is_running():
             return
         try:
@@ -262,7 +268,8 @@ class BinaryHandler:
         except Exception:
             pass
 
-    def _read_loop(self) -> None:
+    def _read_loop(self):
+        # type: () -> None
         buf = b""
         assert self._process and self._process.stdout
         while self._process and self._process.poll() is None:
@@ -277,7 +284,8 @@ class BinaryHandler:
             except Exception:
                 break
 
-    def _process_line(self, line: str) -> None:
+    def _process_line(self, line):
+        # type: (str) -> None
         prefix = "SM-MESSAGE "
         if line.startswith(prefix):
             try:
@@ -286,7 +294,8 @@ class BinaryHandler:
             except json.JSONDecodeError:
                 pass
 
-    def _process_message(self, msg: dict[str, Any]) -> None:
+    def _process_message(self, msg):
+        # type: (dict[str, Any]) -> None
         kind = msg.get("kind")
 
         if kind == "response":
@@ -312,7 +321,9 @@ class BinaryHandler:
             display = msg.get("display", "")
             if display:
                 sublime.set_timeout(
-                    lambda: sublime.status_message(f"Supermaven {display} is running."),
+                    lambda: sublime.status_message(
+                        "Supermaven %s is running." % (display,)
+                    ),
                     0,
                 )
 
@@ -321,40 +332,45 @@ class BinaryHandler:
             if isinstance(inner, dict):
                 self._process_message(inner)
 
-    def _show_activation_dialog(self) -> None:
+    def _show_activation_dialog(self):
+        # type: () -> None
         if self.activate_url:
             sublime.message_dialog(
                 "Supermaven: Please visit the following URL to activate:\n\n"
-                f"{self.activate_url}\n\n"
+                "%s\n\n"
                 "Or run 'Supermaven: Use Free Version' from the Command Palette."
+                % (self.activate_url,)
             )
 
     # ------------------------------------------------------------------
     # Protocol helpers
     # ------------------------------------------------------------------
 
-    def _send_greeting(self) -> None:
+    def _send_greeting(self):
+        # type: () -> None
         self._send_json({"kind": "greeting", "allowGitignore": False})
 
-    def use_free_version(self) -> None:
+    def use_free_version(self):
+        # type: () -> None
         self._send_json({"kind": "use_free_version"})
 
-    def logout(self) -> None:
+    def logout(self):
+        # type: () -> None
         self._send_json({"kind": "logout"})
 
     # ------------------------------------------------------------------
     # State management
     # ------------------------------------------------------------------
 
-    def _purge_old_states(self) -> None:
+    def _purge_old_states(self):
+        # type: () -> None
         cutoff = self.current_state_id - MAX_STATE_ID_RETENTION
         old = [k for k in self.state_map if k < cutoff]
         for k in old:
             del self.state_map[k]
 
-    def submit_query(
-        self, file_path: str, content: str, cursor_offset: int
-    ) -> int | None:
+    def submit_query(self, file_path, content, cursor_offset):
+        # type: (str, str, int) -> int | None
         """
         Send a state_update to the binary for the given document/cursor state.
         Returns the state_id that will carry the completions, or None on error.
@@ -406,19 +422,20 @@ class BinaryHandler:
         }
         return state_id
 
-    def get_completion(self, prefix: str) -> tuple[str | None, int]:
+    def get_completion(self, prefix):
+        # type: (str) -> tuple[str | None, int]
         """
         Search the state_map for the best completion that matches *prefix*.
         Returns (completion_text, prior_delete) or (None, 0).
         """
-        best_text: str | None = None
-        best_prior_delete: int = 0
-        best_length: int = 0
-        best_state_id: int = -1
+        best_text = None  # type: str | None
+        best_prior_delete = 0  # type: int
+        best_length = 0  # type: int
+        best_state_id = -1  # type: int
 
         with self._lock:
             for state_id, state in self.state_map.items():
-                state_prefix: str = state.get("prefix", "")
+                state_prefix = state.get("prefix", "")  # type: str
                 if len(prefix) < len(state_prefix):
                     continue
                 if not prefix.startswith(state_prefix):
