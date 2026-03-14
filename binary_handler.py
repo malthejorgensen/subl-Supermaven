@@ -226,7 +226,7 @@ class BinaryHandler:
                 [binary_path, "stdio"],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
                 bufsize=0,
             )
         except Exception as exc:
