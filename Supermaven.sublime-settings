@@ -1,0 +1,8 @@
+{
+    // Set to false to disable Supermaven completions globally.
+    "enabled": true,
+
+    // Filetypes (syntax names) for which completions are disabled.
+    // Example: ["Plain text", "Markdown"]
+    "disable_filetypes": []
+}

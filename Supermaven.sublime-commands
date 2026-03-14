@@ -1,0 +1,14 @@
+[
+    {
+        "caption": "Supermaven: Use Free Version",
+        "command": "supermaven_use_free_version"
+    },
+    {
+        "caption": "Supermaven: Logout",
+        "command": "supermaven_logout"
+    },
+    {
+        "caption": "Supermaven: Restart",
+        "command": "supermaven_restart"
+    }
+]

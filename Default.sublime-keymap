@@ -1,0 +1,26 @@
+[
+    // Accept the full ghost-text completion
+    {
+        "keys": ["tab"],
+        "command": "supermaven_accept_completion",
+        "context": [
+            { "key": "supermaven.has_completion", "operand": true }
+        ]
+    },
+    // Accept only the next word of the completion
+    {
+        "keys": ["ctrl+right"],
+        "command": "supermaven_accept_word",
+        "context": [
+            { "key": "supermaven.has_completion", "operand": true }
+        ]
+    },
+    // Dismiss ghost text
+    {
+        "keys": ["escape"],
+        "command": "supermaven_dismiss_completion",
+        "context": [
+            { "key": "supermaven.has_completion", "operand": true }
+        ]
+    }
+]
