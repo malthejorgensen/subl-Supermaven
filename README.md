@@ -29,3 +29,7 @@ Key bindings
 
 <!-- [supermaven-nvim]: https://github.com/supermaven-inc/supermaven-nvim -->
 
+See also
+--------
+
+- https://medium.com/@ndudfield/blast-from-the-past-ecae6fbad5fe (someone who tried to built this in 2024, but never finished)
